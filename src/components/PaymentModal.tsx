@@ -13,7 +13,7 @@ interface PaymentModalProps {
   service: ServiceType;
   onClose: () => void;
   walletBalance: number;
-  onSuccess: (amount: number, details: string) => void;
+  onSuccess: (amount: number, type: string, provider: string, accountRef: string, plan: string) => void;
 }
 
 const electricityProviders = ["IKEDC", "EKEDC", "AEDC", "IBEDC", "PHEDC", "EEDC", "BEDC"];
@@ -125,9 +125,15 @@ export default function PaymentModal({ service, onClose, walletBalance, onSucces
     setLoading(false);
     setStep("success");
     const amount = getAmount();
-    const details = `${form.provider || form.network} ${service} payment`;
-    onSuccess(amount, details);
+    onSuccess(
+      amount,
+      service || "",
+      form.provider || form.network || "",
+      form.accountNumber || form.phone || "",
+      form.plan || ""
+    );
   };
+
 
   const formatCurrency = (n: number) =>
     new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
