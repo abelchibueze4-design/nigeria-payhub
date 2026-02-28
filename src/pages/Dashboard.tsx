@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import AppLayout from "@/components/AppLayout";
 import PaymentModal, { ServiceType } from "@/components/PaymentModal";
+import FundWalletModal from "@/components/FundWalletModal";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,6 +43,7 @@ export default function Dashboard() {
   const [loadingWallet, setLoadingWallet] = useState(true);
   const [monthlySpent, setMonthlySpent] = useState(0);
   const [monthlyFunded, setMonthlyFunded] = useState(0);
+  const [showFundModal, setShowFundModal] = useState(false);
 
   const firstName = profile?.full_name?.split(" ")[0] || "User";
 
@@ -175,7 +177,7 @@ export default function Dashboard() {
               </div>
               <Button size="sm"
                 className="bg-accent hover:bg-accent/90 text-accent-foreground border-0 gap-1.5"
-                onClick={() => toast({ title: "Fund Wallet", description: "Connect Paystack integration to enable top-up." })}>
+                onClick={() => setShowFundModal(true)}>
                 <Plus className="w-3.5 h-3.5" />
                 Fund Wallet
               </Button>
@@ -267,6 +269,16 @@ export default function Dashboard() {
           onClose={() => setActiveService(null)}
           walletBalance={walletBalance}
           onSuccess={handlePaymentSuccess}
+        />
+      )}
+
+      {showFundModal && (
+        <FundWalletModal
+          onClose={() => setShowFundModal(false)}
+          onSuccess={(newBalance) => {
+            setWalletBalance(newBalance);
+            fetchTransactions();
+          }}
         />
       )}
     </AppLayout>
