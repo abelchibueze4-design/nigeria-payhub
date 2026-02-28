@@ -36,14 +36,7 @@ export default function FundWalletModal({ onClose, onSuccess }: FundWalletModalP
       const { data: session } = await supabase.auth.getSession();
       const token = session.session?.access_token;
 
-      // Initialize transaction
-      const initRes = await supabase.functions.invoke("paystack", {
-        body: { amount: value, email: user.email },
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
-
-      // supabase.functions.invoke uses query params differently, let's use fetch directly
+      // Initialize transaction via edge function
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const initResponse = await fetch(
         `https://${projectId}.supabase.co/functions/v1/paystack?action=initialize`,
