@@ -28,15 +28,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<{ full_name: string; phone: string } | null>(null);
 
   const fetchUserData = async (userId: string) => {
-    const [{ data: roleData }, { data: profileData }] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", userId).single(),
-      supabase.from("profiles").select("full_name, phone").eq("user_id", userId).single(),
-    ]);
-    setIsAdmin(roleData?.role === "admin");
-    setProfile(profileData);
+    try {
+      const [{ data: roleData, error: roleError }, { data: profileData, error: profileError }] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", userId).single(),
+        supabase.from("profiles").select("full_name, phone").eq("user_id", userId).single(),
+      ]);
+      
+      if (!roleError) {
+        setIsAdmin(roleData?.role === "admin");
+      }
+      if (!profileError) {
+        setProfile(profileData);
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      setIsAdmin(false);
+      setProfile(null);
+    }
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     // Set up auth listener BEFORE getting session
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
@@ -48,21 +61,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsAdmin(false);
           setProfile(null);
         }
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     );
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserData(session.user.id);
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (isMounted) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchUserData(session.user.id);
+        }
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    getInitialSession();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
