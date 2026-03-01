@@ -82,8 +82,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getInitialSession();
 
+    // Safety timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (isMounted) setLoading(false);
+    }, 5000);
+
     return () => {
       isMounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
